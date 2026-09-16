@@ -1,0 +1,108 @@
+data "aws_elastic_beanstalk_solution_stack" "latest" {
+  most_recent = true
+  name_regex  = "^64bit Amazon Linux 2023 .* running Corretto 21$"
+}
+
+data "aws_iam_policy_document" "ec2_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ec2_role" {
+  name               = "${var.application_name}-ec2-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_role_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSelasticbeanstalkWebTier"
+}
+
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "${var.application_name}-ec2-instance-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+data "aws_iam_policy_document" "beanstalk_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["elasticbeanstalk.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "beanstalk_role" {
+  name               = "${var.application_name}-beanstalk-role"
+  assume_role_policy = data.aws_iam_policy_document.beanstalk_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "beanstalk_role_policy_attachment" {
+  role       = aws_iam_role.beanstalk_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkenhancedHealth"
+}
+
+resource "aws_iam_role_policy_attachment" "beanstalk_service_role_policy_attachment" {
+  role       = aws_iam_role.beanstalk_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkManagedUpdatescustomRolePolicy"
+}
+
+resource "aws_elastic_beanstalk_application" "streamflix" {
+  name        = var.application_name
+  description = "Elastic Beanstalk application for ${var.application_name}"
+}
+
+resource "aws_elastic_beanstalk_environment" "streamflix_env" {
+  name                = var.environment_name
+  application         = aws_elastic_beanstalk_application.streamflix.name
+  solution_stack_name = data.aws_elastic_beanstalk_solution_stack.latest.name
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "EnvironmentType"
+    value     = "SingleInstance"
+  }
+
+  setting {
+    namespace = "aws:elasticbenstalk:environment"
+    name      = "ServiceRole"
+    value     = aws_iam_role.beanstalk_role.name
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "IamInstanceProfile"
+    value     = aws_iam_instance_profile.ec2_instance_profile.name
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "InstanceType"
+    value     = var.instance_type
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "PORT"
+    value     = "8080"
+  }
+}
+
+output "Elastic_Beanstalk_application_name" {
+  value = aws_elastic_beanstalk_application.streamflix.name
+}   
+
+output "Elastic_Beanstalk_environment_name" {
+  value = aws_elastic_beanstalk_environment.streamflix_env.name
+}
+
+output "Elastic_Beanstalk_environment_url" {
+  value = aws_elastic_beanstalk_environment.streamflix_env.endpoint_url
+}
+
