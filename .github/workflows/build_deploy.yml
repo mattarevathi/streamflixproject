@@ -1,0 +1,40 @@
+name: Build and Deploy
+on:
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+      - name: Java & Maven Version
+        run: |
+          java -version
+          mvn -version
+      - name: Build with Maven
+        run: |
+          mvn clean package
+      - name: verify Build Artifact
+        run: |
+          ls -l target/*.jar
+          echo "Build artifact exists: $(ls -l target/*.jar)"
+      - name: Prepare EBS package
+        run: |
+          mkdir -p eb-deployment
+          cp target/*.jar eb-deployment/
+          echo "web: java -jar *.jar" > eb-deployment/Procfile
+          ls -la eb-deployment
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamflix-artifact
+          path: eb-deployment
