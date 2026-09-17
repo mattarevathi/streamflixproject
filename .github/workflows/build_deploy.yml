@@ -64,11 +64,6 @@ jobs:
         run: |
           cd terraform
           terraform plan
-      - name: Force Replace Broken Beanstalk Environment
-        run: |
-          cd terraform
-          terraform plan -replace="aws_elastic_beanstalk_environment.Movieflix-env"
-          terraform apply -replace="aws_elastic_beanstalk_environment.Movieflix-env" -auto-approve
       - name: Terraform Apply
         run: |
           cd terraform
