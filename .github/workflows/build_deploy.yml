@@ -36,7 +36,7 @@ jobs:
       - name: upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: streamflix-artifact
+          name: movieflix-artifact
           path: eb-deployment
   deployinfrastructure:
     name: Terraform
@@ -85,7 +85,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: streamflix-artifact  
+          name: movieflix-artifact  
           path: deployment
       - name: Verify deloyment fies
         run: |
@@ -96,14 +96,14 @@ jobs:
       - name: create zip file
         run: |
           cd deployment
-          zip -r ../streamflix-deployment.zip .
+          zip -r ../movieflix-deployment.zip .
           cd ..
-          unzip -l streamflix-deployment.zip
+          unzip -l movieflix-deployment.zip
       - name: Deploy to Elastic Beanstalk
         uses: aws-actions/elastic-beanstalk-deploy@v1
         with:
-          application-name: Streamflix
-          environment-name: streamflix-env
-          version-label: streamflix-${{ github.run_number }}
+          application-name: Movieflix
+          environment-name: Movieflix-env
+          version-label: movieflix-${{ github.run_number }}
           region: ap-south-2
-          deployment-package-path: streamflix-deployment.zip
+          deployment-package-path: movieflix-deployment.zip
