@@ -1,4 +1,4 @@
 aws_region       = "ap-south-2"
-application_name = "Streamflix"
-environment_name = "streamflix-env"
+application_name = "Movieflix"
+environment_name = "Movieflix-env"
 instance_type    = "t3.micro"
